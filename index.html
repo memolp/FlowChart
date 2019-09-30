@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>jsPlumb Flowchart</title>
+    <!-- 样式 -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/twitter-bootstrap/4.1.1/css/bootstrap.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+    <style>
+        #diagramContainer 
+        {
+            padding: 20px;
+            width: 80%;
+            height: 400px;
+            border: 1px solid gray;
+            position: relative;
+            
+        }
+        .item 
+        {
+            padding: 10px 20px;
+            margin: 0px 10px;
+            position: absolute;
+            border: 2px solid rgb(136, 136, 138);
+            border-radius: 30px;
+            background: #f5f5f5;
+            cursor: pointer;
+        }
+        .csslabel{
+            color: #000;
+        }
+        .displaynone{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+	<div class="wrapper">
+        <div style="text-align: center;width:100%;">
+            <h2>FlowChart</h2>
+        </div>
+        <div>
+            <label>按钮区域</label>
+            <input class="input text" type="text" id="id-node-name">
+            <label>节点锚点数</label>
+            <select class="select" id="id-node-tags">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+            </select>
+            <label>节点颜色</label>
+            <select class="select" id="id-node-color">
+                <option value="#FF5d5d"><span style="color:#FF5d5d;padding: 4px;">12</span></option>
+                <option value="#FF9800"><span style="color:#FF9800;padding: 4px;">31</span></option>
+                <option value="#66cdaa"><span style="color:#66cdaa;padding: 4px;">44</span></option>
+                <option value="#2098ee"><span style="color:#2098ee;padding: 4px;">44</span></option>
+            </select>
+            <a class="btn btn-info btn-sm" href="javascript:void(0);" onclick="OnAddNode()">添加节点</a>
+            <a class="btn btn-info btn-sm" href="javascript:void(0);" onclick="OnPrintNode()">获取流数据</a>
+        </div>
+        <div id="diagramContainer">
+        
+        </div>
+        <!-- 模态框（Modal） -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myModalLabel">
+                                模态框（Modal）标题
+                            </h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                            &times;
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        在这里添加一些文本
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                        </button>
+                        <button type="button" class="btn btn-primary">
+                            提交更改
+                        </button>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal -->
+        </div>
+        <!-- <div class="modal hide fade" id="myModal">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">×</button>
+                <h3>Settings</h3>
+            </div>
+            <div class="modal-content modal-body">
+                <p>Here settings can be configured...</p>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn" data-dismiss="modal">Close</a>
+                <a href="#" class="btn btn-primary">Save changes</a>
+            </div>
+        </div> -->
+    </div>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/twitter-bootstrap/4.1.1/js/bootstrap.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/jsplumb.js"></script>
+    <script type="text/javascript">
+        /* global jsPlumb, $ */
+        var mJsPlumbObj = jsPlumb.getInstance({
+            //连线类型，有直线:Straight，折线:Flowchart,状态机:StateMachine 等
+            Connector : [ "Bezier", { curviness:50 } ],
+            //拖动的时候
+            //DragOptions : { cursor: "pointer", zIndex:2000 },
+            //锚点样式
+            EndpointStyle: {fill: '#FF0000',outlineStroke: '#00FF00',strokeWidth: 1, radius:5, width:5,height:5},
+            //连线的样式
+            PaintStyle : { stroke:"#5c96bc", lineWidth:4},
+            //hover时线样式
+            HoverPaintStyle: {strokeStyle: "#1e8151", lineWidth: 2 },
+            //hover时点的样式
+            EndpointHoverStyle:{fillStyle:'red'},
+            //连线箭头和标签
+            ConnectionOverlays:[
+                ['PlainArrow', { width: 12, length: 12, location: 0.8 }],//这个是鼠标拉出来的线的属性
+                [ "Label", { label:"关联",cssClass:"csslabel"} ]
+            ],
+            Container:"diagramContainer",//容器位置
+        })
+        // 编号
+        var id_index = 1;
+        // 节点配置
+        var EndPointConf = {
+            isSource: true,
+            isTarget: true,
+            endpoint: 'Rectangle',
+            // endpoint:'Dot',
+            maxConnections: -1, //一个锚点可以连接的数量，-1表示无限制
+            //cssClass: "displaynone"
+        }
+    
+         // 默认设置
+         mJsPlumbObj.ready(function(){
+            //设置容器
+            //mJsPlumbObj.setContainer('diagramContainer');
+            //创建一个开始节点
+            $("#diagramContainer").append("<div id='item_0' class='item' style='left:30%;top:50%'>未开始</div>");
+            //只有右节点
+            mJsPlumbObj.addEndpoint('item_0', {
+                anchors:'Right'
+                },EndPointConf)
+            //支持拖动节点
+            mJsPlumbObj.draggable('item_0',{containment: 'parent'});
+            //添加事件
+            mJsPlumbObj.bind('click', function (conn, originalEvent){
+                console.log(conn,originalEvent)
+                conn.removeAllOverlays();
+                //conn.setConnector("Flowchart")
+                var operator_name = window.prompt('输入操作名称');
+                if (operator_name && operator_name.length > 0) {
+                    conn.addOverlay(['PlainArrow', { width: 12, length: 12, location: 0.9 }])
+                    conn.addOverlay([ "Label", { label:operator_name,cssClass:"csslabel"} ])
+                }
+            });
+            mJsPlumbObj.bind('endpointDblClick', function(conn,event){
+                $("#myModal").modal("show")
+                //mJsPlumbObj.deleteConnection(conn);
+                console.log(conn,event)
+                // mJsPlumbObj.hide(conn,true)
+            })
+            mJsPlumbObj.bind('beforeDrop', function (conn) {
+                if (conn.sourceId === conn.targetId) 
+                {
+                    return false
+                } else {
+                    return true
+                }
+            })
+            //添加链接事件
+            mJsPlumbObj.bind('connection',function(a1,a2){
+                
+                console.log(a1,a2)
+            });
+        })
+        var item_data = '<div class="item" id="$ITEM" style="background: $COLOR;">\
+                <label>$VALUE</label>\
+                <a class="btn btn-light btn-sm" href="javascript:void(0);" onclick="OnRemove(this)">\
+                    <i class="icon icon-close">x</i>\
+                </a>\
+            </div>'
+        var tag_conf = {0:'Left',1:'Right',2:'Top',3:'Bottom',4:'TopLeft',5:'TopRight',6:'BottomLeft',7:'BottomRight'}
+        function OnAddNode()
+         {
+            var name = $("#id-node-name").val()
+            if (name.length <= 0) return;
+            var tag_num = parseInt($("#id-node-tags").val(),10)
+            var item_color = $("#id-node-color").val()
+            $("#diagramContainer").append(item_data.replace("$ITEM","item_"+id_index).replace("$VALUE",name).replace("$COLOR",item_color));
+            for(var i = 0; i < tag_num; i++)
+            {
+                mJsPlumbObj.addEndpoint('item_'+id_index, {anchors:tag_conf[i]},EndPointConf)
+            }
+            mJsPlumbObj.draggable('item_'+id_index,{containment: 'parent'});
+            id_index += 1;
+         }
+
+         function OnRemove(ele)
+         {
+            var id = $(ele).parent().attr("id");
+            mJsPlumbObj.remove(id)
+         }
+       </script>
+</body>
+</html>
